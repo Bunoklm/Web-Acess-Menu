@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Management Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            position: relative;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #1f1f1f;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+        }
+        .sidebar h1 {
+            color: #ff6600;
+            font-size: 22px;
+            margin: 0 0 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar h1 img {
+            width: 100px;
+            height: 100px;
+            margin-right: 10px;
+        }
+        .tab {
+            margin: 15px 0;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #333;
+            border-radius: 5px;
+        }
+        .tab:hover, .tab.active {
+            background-color: #555;
+        }
+        .content {
+            margin-left: 320px;
+            padding: 20px;
+            position: relative;
+        }
+        .header {
+            font-size: 24px;
+            color: white; 
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .plus-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            background-color: #ff6600;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 24px;
+            line-height: 30px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .app-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 150px);
+            gap: 20px;
+            padding: 20px;
+        }
+        .app-icon {
+            width: 150px;
+            text-align: center;
+            cursor: pointer;
+            color: #e0e0e0;
+            position: relative;
+        }
+        .app-icon img {
+            width: 100%;
+            height: 100px;
+            border-radius: 15%;
+            object-fit: contain;
+        }
+        .app-icon div {
+            color: #e0e0e0; 
+            margin-top: 1px; 
+            text-decoration: none; 
+            pointer-events: none; 
+        }
+        .app-icon a {
+            color: white; 
+            text-decoration: none; 
+            display: block; 
+        }
+        .app-icon a:hover {
+            color: white; 
+        }
+        .clock {
+            position: absolute;
+            top: 20px;
+            right: 80px;
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #ff6600; 
+            background-color: #1f1f1f;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%; 
+                height: auto; 
+                position: static; 
+                display: block; 
+            }
+            .content {
+                margin-left: 0;
+                padding: 10px; 
+            }
+            .app-container {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+                gap: 10px; 
+            }
+            .app-icon img {
+                height: 70px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <h1><img src="add link for Logo" alt="Logo"> Management Menu</h1>
+    <div class="tab active" onclick="switchTab('Area 1')">Area 1</div>
+    <div class="tab" onclick="switchTab('Area 2')">Area 2</div>
+    <div class="tab" onclick="switchTab('Area 3')">Area 3</div>
+    <div class="tab" onclick="switchTab('Area 4')">Area 4</div>
+    <div class="tab" onclick="switchTab('Area 5')">Area 5</div>
+</div>
+
+<div class="content">
+    <div class="header" id="tabHeader">Area 1</div>
+    <div class="plus-button" onclick="addApp()">+</div>
+    <div class="clock" id="clock"></div>
+
+    <div id="appContainer" class="app-container"></div>
+</div>
+
+<script>
+    let currentTab = 'Area 1';
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(tab => {
+            if (tab.innerText === tabName) {
+                tab.classList.add('active');
+            }
+        });
+        updateHeader();
+        loadApps();
+    }
+
+    function updateHeader() {
+        document.getElementById('tabHeader').innerText = currentTab;
+    }
+
+    async function addApp() {
+        const name = prompt("App Name:");
+        const url = prompt("App URL:");
+        const icon = prompt("Icon URL:");
+        if (name && url && icon) {
+            const newApp = { name, url, icon, category: currentTab };
+            try {
+                const response = await fetch('http://192.168.178.102:5000/add_app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newApp)
+                });
+                if (response.ok) loadApps();
+            } catch (error) {
+                console.error("Fehler beim Hinzufügen der App:", error);
+            }
+        }
+    }
+
+    async function deleteApp(name) {
+        if (confirm(`Möchten Sie ${name} löschen?`)) {
+            try {
+                const response = await fetch(`http://192.168.178.102:5000/delete_app/${currentTab}/${name}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) loadApps();
+            } catch (error) {
+                console.error("Fehler beim Löschen der App:", error);
+            }
+        }
+    }
+
+    async function loadApps() {
+        try {
+            const response = await fetch(`http://192.168.178.102:5000/apps/${currentTab}`);
+            const apps = await response.json();
+            const appContainer = document.getElementById('appContainer');
+            appContainer.innerHTML = '';
+            apps.forEach(app => {
+                const appDiv = document.createElement('div');
+                appDiv.className = 'app-icon';
+                appDiv.innerHTML = `
+                    <a href="${app.url}" target="_blank">
+                        <img src="${app.icon}" alt="${app.name}">
+                        <div>${app.name}</div>
+                    </a>
+                `;
+                appDiv.oncontextmenu = (e) => { e.preventDefault(); deleteApp(app.name); };
+                appContainer.appendChild(appDiv);
+            });
+        } catch (error) {
+            console.error("Fehler beim Laden der Apps:", error);
+        }
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    setInterval(updateClock, 1000);
+    window.onload = () => {
+        loadApps();
+        updateHeader();
+    };
+</script>
+</body>
+</html>
