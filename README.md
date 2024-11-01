@@ -84,3 +84,8 @@ You can rename the areas directly in the HTML file:
 - Applications are stored in a JSON file named `apps.json`.
 - You can add applications by sending a POST request to `/add_app` with JSON data.
 - Applications can be retrieved by accessing `/apps/<category>` and deleted by sending a DELETE request to `/delete_app/<category>/<name>`.
+
+
+## Example
+![screenshot](https://github.com/user-attachments/assets/d687347d-f128-4d24-ab8e-a9cafcd2d586)
+
